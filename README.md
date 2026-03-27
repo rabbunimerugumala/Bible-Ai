@@ -1,303 +1,94 @@
-# 📖 Bible AI — Production-Grade Intelligent Scripture Companion
+# 📖 Bible AI — Intelligent Scripture Companion
 
-<div align="center">
-
-![Bible AI Banner](assets/images/hero-bible.png)
-
-**An AI-powered mobile application for deep Bible study, semantic scripture search, intelligent Q&A, and biblical-style text generation.**
-
-[![React Native](https://img.shields.io/badge/React%20Native-0.76-61DAFB?style=flat-square&logo=react)](https://reactnative.dev)
-[![Expo](https://img.shields.io/badge/Expo-52.0-000020?style=flat-square&logo=expo)](https://expo.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?style=flat-square&logo=typescript)](https://typescriptlang.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-
-</div>
-
----
-
-## 📋 Table of Contents
-
-1. [Overview](#-overview)
-2. [Features](#-features)
-3. [Tech Stack](#-tech-stack)
-4. [Architecture](#-architecture)
-5. [Folder Structure](#-folder-structure)
-6. [Setup Instructions](#-setup-instructions)
-7. [Docker Setup](#-docker-setup)
-8. [Testing](#-testing)
-9. [Deployment — AWS EC2 + NGINX](#-deployment--aws-ec2--nginx)
-10. [Security Practices](#-security-practices)
-11. [Observability & Monitoring](#-observability--monitoring)
-12. [Scaling Notes](#-scaling-notes)
-13. [Production-Grade Standards](#-production-grade-standards)
-14. [CI/CD Pipeline](#-cicd-pipeline)
-15. [Contributing](#-contributing)
-
----
-
-## 🌟 Overview
-
-**Bible AI** is a premium, production-grade mobile application built with React Native and Expo that transforms the way users interact with the Holy Scriptures. By combining modern AI/NLP techniques with a beautifully crafted glassmorphism UI, Bible AI provides:
-
-- **Intelligent Verse Discovery** — Keyword and semantic (vector-embedding) search across the entire KJV corpus
-- **Conversational Scripture Q&A** — Natural language questions answered with contextual verse references
-- **AI Text Generation** — Create original biblical-style prose in Psalm, Prophecy, Proverb, or Gospel styles
-- **Thematic Exploration** — Browse 15 curated themes and 12 books with instant verse retrieval
-- **Daily Devotional** — Algorithmically selected verse of the day with parchment-styled presentation
-
-The app is architecturally designed for a future real-backend integration (FastAPI + PyTorch + FAISS + PostgreSQL) while delivering a fully functional experience today via intelligent mocked AI services.
-
----
+An AI-powered mobile application for Bible study, scripture search, intelligent Q&A, and text generation.
 
 ## ✨ Features
 
-### 🔍 Search Engine
-| Feature | Description | AI Method |
-|---------|-------------|-----------|
-| **Keyword Search** | Exact token matching across all verse text | SQL `LIKE` / JS `includes()` |
-| **Semantic Search** | Meaning-based retrieval — finds verses by concept | SentenceTransformer embeddings + FAISS (mocked: TF-IDF scoring) |
-| **Multi-filter** | Filter by book, testament, theme | Compound query builder |
-| **Suggested Queries** | Curated starter searches for onboarding | Static + algorithmic |
-
-### 🤖 AI Q&A (Ask AI Tab)
-| Feature | Description |
-|---------|-------------|
-| **Natural Language Q&A** | Ask questions in plain English; receive scripture-grounded answers |
-| **Verse Context Cards** | Each answer surfaces 1–2 relevant verse references |
-| **Quick Question Chips** | One-tap suggested questions for discovery |
-| **Chat History** | Persistent in-session conversation thread |
-| **Typing Indicators** | Streaming-style UX with animated indicator |
-
-> **AI Backend**: Intent matched via keyword pattern recognition (12 theological topics). Production upgrade: fine-tuned BERT QA model on Bible QA dataset.
-
-### ✍️ Text Generation (Creative Mode)
-| Style | Description | Linguistic Model |
-|-------|-------------|-----------------|
-| **Psalm** | Poetic praise — parallelism, imagery | GPT-2 fine-tuned on Psalms corpus |
-| **Prophecy** | Prophetic declarations — "Thus saith the Lord" | Seq2Seq with prophetic book corpus |
-| **Proverb** | Aphoristic wisdom sayings | Fine-tuned on Proverbs + Ecclesiastes |
-| **Gospel** | Narrative good news — parable style | GPT-2 fine-tuned on Synoptic Gospels |
-
-### 🏷️ Verse Classification (Explore Tab)
-| Feature | Description |
-|---------|-------------|
-| **Theme Classification** | 15 theological categories (Love, Faith, Hope, Wisdom, etc.) |
-| **Book Navigation** | Old & New Testament books with chapter counts and category labels |
-| **Testament Grouping** | Visual separation of Old and New Testament |
-| **Featured Collections** | Curated theme collections with verse counts |
-
-> **Production Model**: Logistic Regression / fine-tuned DistilBERT classifier trained on verse-theme pairs.
-
-### 📊 Analytics & Insights *(Phase 2)*
-- Popular query tracking
-- Trending verse dashboard
-- User reading streak
-- Theme distribution charts
-
-### 🌐 Multi-Translation Support *(Phase 3)*
-- King James Version (KJV) — **current**
-- American Standard Version (ASV) — planned
-- Darby Translation — planned
-- Side-by-side comparison view — planned
-
----
+- **Search** — Keyword and semantic search across scriptures
+- **Ask AI** — Ask questions and get scripture-grounded answers
+- **Creative Mode** — Generate biblical-style text (Psalm, Prophecy, Proverb, Gospel)
+- **Explore** — Browse themes and scriptures organized by category
+- **Daily Devotional** — Verse of the day with curated selections
 
 ## 🛠 Tech Stack
 
-### Mobile Application (Current)
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Framework** | React Native | 0.76.x | Cross-platform mobile UI |
-| **Build Tool** | Expo SDK | 52.x | Managed workflow, OTA updates |
-| **Language** | TypeScript | 5.3.x | Type safety, developer experience |
-| **Navigation** | Expo Router | 4.x | File-based routing (Next.js-style) |
-| **Animations** | Expo Linear Gradient | 14.x | GPU-accelerated gradients |
-| **Images** | expo-image | 2.x | Optimized image rendering |
-| **Icons** | @expo/vector-icons | 14.x | Feather, MaterialIcons, FontAwesome5 |
-| **Safe Areas** | react-native-safe-area-context | 4.x | Notch/island handling |
-| **State** | React hooks (useState, useContext) | — | Local + shared state management |
+- **Frontend**: React Native, Expo, TypeScript
+- **UI Framework**: React Native, Expo Router, Linear Gradient
+- **State Management**: React Context API
+- **Storage**: AsyncStorage
+- **Backend**: Supabase (auth & data)
+- **Build Tool**: Metro (Expo)
 
-### AI/ML Backend (Production Architecture)
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **API Server** | FastAPI (Python 3.11) | Async REST API, OpenAPI docs |
-| **NLP Models** | Hugging Face Transformers | BERT QA, GPT-2 generation, DistilBERT classification |
-| **Embeddings** | SentenceTransformers | all-MiniLM-L6-v2 for semantic similarity |
-| **Vector DB** | FAISS | In-memory semantic search (ANN retrieval) |
-| **Relational DB** | PostgreSQL 16 | Verse text, user data, analytics |
-| **Cache** | Redis 7 | Response caching, rate limiting, sessions |
-| **ML Framework** | PyTorch 2.x | Model inference and fine-tuning |
-| **Data Processing** | Pandas, NumPy | CSV ingestion, preprocessing |
-
-### Infrastructure (Production)
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Containerization** | Docker + Docker Compose | Reproducible environments |
-| **Reverse Proxy** | NGINX | SSL termination, load balancing |
-| **Cloud** | AWS EC2 (t3.medium+) | Application hosting |
-| **Storage** | AWS S3 | Model artifacts, user uploads |
-| **CDN** | AWS CloudFront | Static asset delivery |
-| **Secrets** | AWS Secrets Manager | API keys, DB credentials |
-| **CI/CD** | GitHub Actions | Automated testing and deployment |
-| **Monitoring** | Prometheus + Grafana | Metrics, alerting |
-| **Logging** | AWS CloudWatch | Centralized log aggregation |
-
----
-
-## 🏛 Architecture
+## 📁 Project Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     CLIENT (React Native/Expo)                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
-│  │  Home    │  │ Search   │  │  Chat    │  │  Creative    │   │
-│  │  Screen  │  │  Screen  │  │  Screen  │  │  Screen      │   │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘   │
-│       │              │              │                │           │
-│  ┌────▼──────────────▼──────────────▼────────────────▼──────┐  │
-│  │               Hooks Layer (Business Logic)                 │  │
-│  │     useSearch  │  useChat  │  useCreative  │  useBible    │  │
-│  └────┬──────────────────────────────────────────────────────┘  │
-│       │                                                          │
-│  ┌────▼──────────────────────────────────────────────────────┐  │
-│  │               Services Layer (Data Access)                 │  │
-│  │       bibleService.ts  │  aiService.ts                    │  │
-│  └────┬──────────────────────────────────────────────────────┘  │
-└───────┼─────────────────────────────────────────────────────────┘
-        │ HTTPS / REST API
-┌───────▼─────────────────────────────────────────────────────────┐
-│                      NGINX (Reverse Proxy)                       │
-│               SSL Termination + Load Balancing                   │
-└───────┬─────────────────────────────────────────────────────────┘
-        │
-┌───────▼─────────────────────────────────────────────────────────┐
-│                   FastAPI Application Server                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
-│  │  /ask    │  │ /search  │  │/generate │  │  /classify   │   │
-│  │  Q&A     │  │ Semantic │  │  GPT-2   │  │  DistilBERT  │   │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘   │
-│       │              │              │                │           │
-│  ┌────▼──────────────▼──────────────▼────────────────▼──────┐  │
-│  │              AI/ML Service Layer                           │  │
-│  │  BERT QA Model │ SentenceTransformer │ GPT-2 │ Classifier │  │
-│  └────┬──────────────────┬───────────────────────────────────┘  │
-│       │                   │                                       │
-│  ┌────▼──────┐       ┌────▼──────┐  ┌────────────┐              │
-│  │PostgreSQL │       │  FAISS    │  │   Redis    │              │
-│  │ (Verses)  │       │  Vector   │  │  (Cache)   │              │
-│  └───────────┘       └───────────┘  └────────────┘              │
-└─────────────────────────────────────────────────────────────────┘
+app/                    # App screens and routes (Home, Search, Chat, Creative, Explore)
+components/             # Reusable UI components (VerseCard, SearchBar, ThemeTag)
+hooks/                  # Custom React hooks (useSearch, useChat, useCreative)
+services/              # API and service logic (bibleService, aiService)
+constants/             # App constants (colors, themes, bible data)
+template/              # Template utilities (auth, UI context)
+assets/                # Images and fonts
 ```
 
-### Data Flow — Semantic Search
-```
-User Query → Tokenize → SentenceTransformer Encode → 384-dim Vector
-→ FAISS ANN Search (top-K) → Verse IDs → PostgreSQL Fetch → Ranked Results
-```
-
-### Data Flow — Q&A
-```
-Question → Intent Classification → BERT QA (extractive) → Evidence Passages
-→ Verse Retrieval → Response Assembly → Client Response
-```
-
----
-
-## 📁 Folder Structure
-
-```
-bible-ai/
-│
-├── app/                          # Expo Router — screen entrypoints
-│   ├── _layout.tsx               # Root layout: AlertProvider + SafeAreaProvider
-│   └── (tabs)/                   # Tab group
-│       ├── _layout.tsx           # Tab navigator (5 tabs, gold theme)
-│       ├── index.tsx             # 🏠 Home — hero, daily verse, browse
-│       ├── search.tsx            # 🔍 Search — keyword + semantic AI mode
-│       ├── chat.tsx              # 🤖 Ask AI — conversational Q&A chat
-│       ├── creative.tsx          # ✍️  Creative — AI text generation
-│       └── explore.tsx           # 🧭 Explore — themes + books browser
-│
-├── components/
-│   └── ui/
-│       ├── VerseCard.tsx         # Verse display (default/parchment/compact variants)
-│       ├── SearchBar.tsx         # Glassmorphic search input with clear action
-│       └── ThemeTag.tsx          # Pill tag for theme filtering (selected state)
-│
-├── constants/
-│   ├── theme.ts                  # Design system: Colors, Spacing, Typography, Shadows
-│   └── bibleData.ts             # Static verse corpus (30 KJV verses), book metadata
-│
-├── hooks/
-│   ├── useSearch.ts             # Search state: query, results, mode, loading
-│   ├── useChat.ts               # Chat state: messages, send, clear, loading
-│   └── useCreative.ts           # Creative state: prompt, style, result, history
-│
-├── services/
-│   ├── bibleService.ts          # Verse querying: search, filter by theme/book/testament
-│   └── aiService.ts             # AI layer: Q&A patterns, text templates, semantic mock
-│
-├── assets/
-│   └── images/
-│       ├── hero-bible.png        # AI-generated hero banner (16:9, navy/gold)
-│       └── chat-bg.png           # AI-generated chat background illustration
-│
-├── template/                     # OnSpace Cloud auth/UI template system
-│   ├── auth/                     # Authentication providers (mock + Supabase)
-│   ├── core/                     # Client config, types
-│   └── ui/                       # Alert system (AlertProvider, useAlert)
-│
-├── app.json                      # Expo app configuration
-├── babel.config.js               # Babel transpiler config
-├── tsconfig.json                 # TypeScript compiler options
-├── package.json                  # Dependencies and scripts
-├── eslint.config.js              # ESLint rules
-└── README.md                     # This file
-```
-
----
-
-## 🚀 Setup Instructions
+## 🚀 Getting Started
 
 ### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Expo Go app on your mobile device
 
-| Requirement | Version | Install |
-|-------------|---------|---------|
-| Node.js | 18.x LTS | [nodejs.org](https://nodejs.org) |
-| npm / yarn | 9.x / 1.22.x | Bundled with Node |
-| Expo CLI | Latest | `npm i -g expo-cli` |
-| iOS Simulator | Xcode 15+ | macOS only |
-| Android Emulator | Android Studio | All platforms |
-
-### Local Development
+### Installation
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/bible-ai.git
-cd bible-ai
-
-# 2. Install dependencies
+# Install dependencies
 npm install
 
-# 3. Start the Expo development server
-npx expo start
-
-# 4. Choose your target platform
-#    Press 'i' for iOS Simulator
-#    Press 'a' for Android Emulator
-#    Press 'w' for Web preview
-#    Scan QR code with Expo Go app for physical device
-```
-
-### Running the Application
-
-**Start development server (interactive menu):**
-```bash
+# Start development server
 npm start
+
+# Run on web
+npm run web
+
+# Run on Android
+npm run android
+
+# Run on iOS
+npm run ios
 ```
 
-**Run on specific platform:**
-```bash
+### Environment Variables
+
+Create a `.env` file in the project root:
+```
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+```
+
+## 📱 Development
+
+1. Scan the QR code in the terminal with **Expo Go** app
+2. Hot reload works automatically on code changes
+3. Use `npm run lint` to check code quality
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/name`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/name`)
+5. Open a Pull Request
+
+## 📄 License
+
+MIT License
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/rabbunimerugumala/Bible-Ai)
+- [Expo Documentation](https://docs.expo.dev)
+- [React Native Docs](https://reactnative.dev)
+
 npm run web      # Run in web browser at http://localhost:8081
 npm run ios      # Run on iOS Simulator (macOS only)
 npm run android  # Run on Android Emulator
