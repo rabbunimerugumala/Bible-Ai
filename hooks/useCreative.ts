@@ -1,4 +1,4 @@
-// Powered by OnSpace.AI
+// Powered by OnSpace.AI — Async Creative Hook with SQLite
 import { useState, useCallback } from 'react';
 import { GeneratedText, generateBiblicalText } from '@/services/aiService';
 
@@ -12,13 +12,18 @@ export function useCreative() {
   const [history, setHistory] = useState<GeneratedText[]>([]);
 
   const generate = useCallback(async () => {
-    if (loading) return;
+    if (loading || !prompt.trim()) return;
+    
     setLoading(true);
     setResult(null);
+    
     try {
       const generated = await generateBiblicalText(prompt, style);
       setResult(generated);
       setHistory((prev) => [generated, ...prev].slice(0, 10));
+    } catch (error) {
+      console.error('Creative generation error:', error);
+      setResult(null);
     } finally {
       setLoading(false);
     }

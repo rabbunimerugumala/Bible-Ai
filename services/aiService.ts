@@ -1,5 +1,5 @@
-// Powered by OnSpace.AI — Mocked AI responses
-import { VERSES, Verse } from '@/constants/bibleData';
+// Powered by OnSpace.AI — Async SQLite AI Service
+import { Verse } from '@/constants/bibleData';
 import { searchVerses, getVersesByTheme, formatReference } from './bibleService';
 
 export interface ChatMessage {
@@ -15,78 +15,78 @@ export interface GeneratedText {
   style: string;
 }
 
-// --- Q&A Mock Responses ---
+// --- Q&A Mock Responses with Direct Data ---
 const QA_PATTERNS: { keywords: string[]; response: string; themeQuery?: string }[] = [
   {
     keywords: ['love', 'loved', 'loving'],
     response:
-      'The Bible speaks of love as the greatest commandment and the very nature of God. "For God so loved the world..." (John 3:16). Love is not merely a feeling but an action — seen most perfectly in the sacrifice of Christ for humanity.',
+      'The Bible speaks of love as the greatest commandment and the very nature of God. Love is not merely a feeling but an action — seen most perfectly in the sacrifice of Christ for humanity.',
     themeQuery: 'Love',
   },
   {
     keywords: ['faith', 'believe', 'trust'],
     response:
-      'Faith is the foundation of the Christian life. Hebrews 11:1 defines it as "the substance of things hoped for, the evidence of things not seen." Faith is not blind optimism — it is anchored in the character and promises of God.',
+      'Faith is the foundation of the Christian life. It is the substance of things hoped for, the evidence of things not seen. Faith is not blind optimism — it is anchored in the character and promises of God.',
     themeQuery: 'Faith',
   },
   {
     keywords: ['fear', 'afraid', 'anxious', 'anxiety', 'worry'],
     response:
-      'Scripture offers profound comfort for fear and anxiety. "Fear thou not; for I am with thee" (Isaiah 41:10). God repeatedly commands "fear not" — over 365 times — one for each day of the year.',
+      'Scripture offers profound comfort for fear and anxiety. God repeatedly commands "fear not" — over 365 times — one for each day of the year. He is with you always.',
     themeQuery: 'Peace',
   },
   {
-    keywords: ['prayer', 'pray', 'praying'],
+    keywords: ['prayer', 'pray', 'praying', 'intercede'],
     response:
-      'Prayer is the lifeline of the believer — direct communication with God. Philippians 4:6 instructs: "Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God."',
+      'Prayer is the lifeline of the believer — direct communication with God. Through prayer and supplication with thanksgiving let your requests be made known unto God.',
     themeQuery: 'Prayer',
   },
   {
-    keywords: ['hope', 'hopeless', 'future'],
+    keywords: ['hope', 'hopeless', 'future', 'despair'],
     response:
-      'Hope in Scripture is not wishful thinking — it is confident expectation. "For I know the thoughts that I think toward you, saith the Lord, thoughts of peace, and not of evil, to give you an expected end." (Jeremiah 29:11)',
+      'Hope in Scripture is not wishful thinking — it is confident expectation. God has thoughts of peace toward you, not of evil, to give you an expected end.',
     themeQuery: 'Hope',
   },
   {
-    keywords: ['salvation', 'saved', 'heaven', 'eternal life'],
+    keywords: ['salvation', 'saved', 'heaven', 'eternal life', 'gospel'],
     response:
-      'Salvation is the central message of the Bible. "For by grace are ye saved through faith; and that not of yourselves: it is the gift of God." (Ephesians 2:8). It is not earned by works but received by faith.',
+      'Salvation is the central message of the Bible. It is not earned by works but received by faith. Jesus Christ paid the price for humanity\'s redemption.',
     themeQuery: 'Salvation',
   },
   {
-    keywords: ['strength', 'strong', 'weak', 'tired', 'weary'],
+    keywords: ['strength', 'strong', 'weak', 'tired', 'weary', 'power'],
     response:
-      'God promises His strength to those who are weary. "They that wait upon the Lord shall renew their strength; they shall mount up with wings as eagles." (Isaiah 40:31). Human weakness becomes the canvas for divine power.',
+      'God promises His strength to those who are weary. Those who wait upon the Lord shall renew their strength and mount up with wings as eagles. Human weakness becomes the canvas for divine power.',
     themeQuery: 'Strength',
   },
   {
-    keywords: ['wisdom', 'wise', 'decision', 'guidance', 'direction'],
+    keywords: ['wisdom', 'wise', 'decision', 'guidance', 'direction', 'counsel'],
     response:
-      'Wisdom begins with reverence for God. Proverbs 3:5-6 counsels: "Trust in the Lord with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths."',
+      'Wisdom begins with reverence for God. Trust in the Lord with all your heart and lean not on your own understanding. In all your ways acknowledge Him, and He shall direct your paths.',
     themeQuery: 'Wisdom',
   },
   {
-    keywords: ['forgiveness', 'forgive', 'sin', 'guilt'],
+    keywords: ['forgiveness', 'forgive', 'sin', 'guilt', 'repent', 'pardon'],
     response:
-      'Forgiveness is at the heart of the Gospel. "If we confess our sins, he is faithful and just to forgive us our sins, and to cleanse us from all unrighteousness." (1 John 1:9). No sin is too great for God\'s grace.',
+      'Forgiveness is at the heart of the Gospel. If we confess our sins, He is faithful and just to forgive us our sins and to cleanse us from all unrighteousness. No sin is too great for God\'s grace.',
     themeQuery: 'Forgiveness',
   },
   {
-    keywords: ['peace', 'rest', 'calm', 'troubled'],
+    keywords: ['peace', 'rest', 'calm', 'troubled', 'serenity'],
     response:
-      '"Peace I leave with you, my peace I give unto you." (John 14:27). The peace of God is not the absence of trouble — it is a supernatural calm that guards the heart even in the midst of storms.',
+      'The peace of God is not merely the absence of trouble — it is a supernatural calm that guards the heart even in the midst of storms. This peace surpasses understanding.',
     themeQuery: 'Peace',
   },
   {
-    keywords: ['healing', 'sick', 'healed', 'health'],
+    keywords: ['healing', 'sick', 'healed', 'health', 'wholeness'],
     response:
-      'The Bible promises healing for both body and soul. "By his stripes we are healed." (Isaiah 53:5). God is called Jehovah-Rapha — the God who heals — throughout Scripture.',
+      'The Bible promises healing for both body and soul. God is known as the One who heals — throughout Scripture, His healing power is revealed to those who trust in Him.',
     themeQuery: 'Healing',
   },
   {
-    keywords: ['grace', 'mercy', 'undeserving'],
+    keywords: ['grace', 'mercy', 'undeserving', 'compassion'],
     response:
-      'Grace is God\'s unmerited favor — His love poured out on those who deserve it least. "But where sin abounded, grace did much more abound." (Romans 5:20). Grace is not a license to sin but the power to overcome it.',
+      'Grace is God\'s unmerited favor — His love poured out on those who deserve it least. Where sin abounded, grace did much more abound. Grace is not a license to sin but the power to overcome it.',
     themeQuery: 'Grace',
   },
 ];
@@ -104,27 +104,38 @@ function findBestAnswer(question: string): { response: string; themeQuery?: stri
 export async function askQuestion(question: string): Promise<ChatMessage> {
   await delay(1200 + Math.random() * 800);
 
-  const answer = findBestAnswer(question);
-  const searchResults = searchVerses(question).slice(0, 2);
+  try {
+    const answer = findBestAnswer(question);
+    const searchResults = await searchVerses(question);
 
-  let verses: Verse[] = [];
-  if (answer?.themeQuery) {
-    verses = getVersesByTheme(answer.themeQuery).slice(0, 2);
-  } else if (searchResults.length > 0) {
-    verses = searchResults;
+    let verses: Verse[] = [];
+    if (answer?.themeQuery) {
+      verses = await getVersesByTheme(answer.themeQuery);
+      verses = verses.slice(0, 3);
+    } else if (searchResults.length > 0) {
+      verses = searchResults.slice(0, 2);
+    }
+
+    const text = answer
+      ? answer.response
+      : `That is a profound question. The Bible offers rich guidance across many topics. I searched the scriptures and found ${verses.length > 0 ? 'some relevant passages' : 'wisdom that may speak to your heart'}. Consider studying these verses in their full context, using concordances and commentaries for deeper insight.`;
+
+    return {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      text,
+      verses: verses.length > 0 ? verses : await searchVerses(question).then(r => r.slice(0, 2)),
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    console.error('askQuestion error:', error);
+    return {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      text: 'I encountered an error retrieving scripture. Please try again.',
+      timestamp: new Date(),
+    };
   }
-
-  const text = answer
-    ? answer.response
-    : `That is a profound question. The Bible offers rich guidance across many topics. I searched the scriptures and found ${verses.length > 0 ? 'some relevant passages' : 'wisdom that may speak to your heart'}. Consider studying these verses in their full context, using concordances and commentaries for deeper insight.`;
-
-  return {
-    id: `msg-${Date.now()}`,
-    role: 'assistant',
-    text,
-    verses: verses.length > 0 ? verses : searchResults.slice(0, 2),
-    timestamp: new Date(),
-  };
 }
 
 // --- Creative Text Generation ---
@@ -160,21 +171,30 @@ export async function generateBiblicalText(
 // --- Semantic Search (Mock) ---
 export async function semanticSearch(query: string): Promise<Verse[]> {
   await delay(800 + Math.random() * 400);
-  const keywords = query.toLowerCase().split(' ').filter((w) => w.length > 3);
-  const scored = VERSES.map((v) => {
-    let score = 0;
-    keywords.forEach((kw) => {
-      if (v.text.toLowerCase().includes(kw)) score += 2;
-      if (v.themes.some((t) => t.toLowerCase().includes(kw))) score += 1;
-      if (v.book.toLowerCase().includes(kw)) score += 1;
+  
+  try {
+    const allResults = await searchVerses(query);
+    
+    const keywords = query.toLowerCase().split(' ').filter((w) => w.length > 3);
+    const scored = allResults.map((v) => {
+      let score = 0;
+      keywords.forEach((kw) => {
+        if (v.text.toLowerCase().includes(kw)) score += 2;
+        if (v.themes.some((t) => t.toLowerCase().includes(kw))) score += 1;
+        if (v.book.toLowerCase().includes(kw)) score += 1;
+      });
+      return { verse: v, score };
     });
-    return { verse: v, score };
-  });
-  return scored
-    .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
-    .map((s) => s.verse);
+    
+    return scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .map((s) => s.verse);
+  } catch (error) {
+    console.error('semanticSearch error:', error);
+    return [];
+  }
 }
 
 function delay(ms: number) {

@@ -1,537 +1,622 @@
-// Powered by OnSpace.AI — Glassmorphism Home Screen
-import React, { useMemo } from 'react';
+// Powered by OnSpace.AI — Glassmorphism Explore Screen with SQLite
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, Pressable, StyleSheet, Dimensions,
+  View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, TextInput,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { Colors, Spacing, FontSize, FontWeight, BorderRadius, Shadow, GlassStyle } from '@/constants/theme';
+import { Feather } from '@expo/vector-icons';
+import { Colors, Spacing, FontSize, FontWeight, BorderRadius } from '@/constants/theme';
 import { VerseCard } from '@/components/ui/VerseCard';
-import { getDailyVerse, getFeaturedVerses } from '@/services/bibleService';
-import { FEATURED_THEMES, BOOKS } from '@/constants/bibleData';
+import { Verse, Book } from '@/constants/bibleData';
+import {
+  getAllBooks,
+  getChaptersByBook, getVersesByBookAndChapter,
+} from '@/services/bibleService';
 
-const { width: SW } = Dimensions.get('window');
+const CATEGORY_CONFIG: Record<string, {
+  icon: keyof typeof Feather.glyphMap;
+  color: string;
+}> = {
+  Law:      { icon: 'book',       color: '#D4AF5A' },
+  Poetry:   { icon: 'music',      color: '#7B8CE0' },
+  Wisdom:   { icon: 'award',      color: '#E0C07B' },
+  Prophecy: { icon: 'eye',        color: '#E07B7B' },
+  Gospel:   { icon: 'heart',      color: '#E07BA8' },
+  Epistle:  { icon: 'mail',       color: '#7BE0C0' },
+  History:  { icon: 'map',        color: '#E0C07B' },
+  Acts:     { icon: 'move',       color: '#7BE0D0' },
+  Other:    { icon: 'book-open',  color: Colors.primary },
+};
 
-const QUICK_ACTIONS = [
-  { label: 'Ask AI',    icon: 'auto-awesome' as const, lib: 'material', route: '/(tabs)/chat',     color: Colors.primary },
-  { label: 'Search',   icon: 'search'        as const, lib: 'feather',  route: '/(tabs)/search',   color: Colors.info },
-  { label: 'Create',   icon: 'edit-3'        as const, lib: 'feather',  route: '/(tabs)/creative', color: Colors.success },
-  { label: 'Explore',  icon: 'compass'       as const, lib: 'feather',  route: '/(tabs)/explore',  color: Colors.warning },
-];
 
-export default function HomeScreen() {
+export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const dailyVerse = useMemo(() => getDailyVerse(), []);
-  const featured = useMemo(() => getFeaturedVerses(3), []);
+  // Removed themes mode, defaulting to books
+  
+  // ── Books state (3-level: book → chapter → verses) ──
+  const [allBooks, setAllBooks] = useState<Book[]>([]);
+  const [loadingBooks, setLoadingBooks] = useState(true);
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [chapters, setChapters] = useState<number[]>([]);
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
+  const [chapterVerses, setChapterVerses] = useState<Verse[]>([]);
+  const [loadingVerses, setLoadingVerses] = useState(false);
+  const [bookSearchQuery, setBookSearchQuery] = useState('');
+
+  // Load all books on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const books = await getAllBooks();
+        setAllBooks(books);
+      } catch (e) {
+        console.error('Error loading books:', e);
+      } finally {
+        setLoadingBooks(false);
+      }
+    })();
+  }, []);
+
+  // Load chapters when a book is selected
+  useEffect(() => {
+    if (!selectedBook) { setChapters([]); setSelectedChapter(null); setChapterVerses([]); return; }
+    setSelectedChapter(null);
+    setChapterVerses([]);
+    setLoadingChapters(true);
+    (async () => {
+      try {
+        setChapters(await getChaptersByBook(selectedBook));
+      } catch (e) {
+        console.error('Error loading chapters:', e);
+      } finally {
+        setLoadingChapters(false);
+      }
+    })();
+  }, [selectedBook]);
+
+  // Load verses when a chapter is selected
+  useEffect(() => {
+    if (!selectedBook || selectedChapter === null) { setChapterVerses([]); return; }
+    setLoadingVerses(true);
+    (async () => {
+      try {
+        setChapterVerses(await getVersesByBookAndChapter(selectedBook, selectedChapter));
+      } catch (e) {
+        console.error('Error loading chapter verses:', e);
+      } finally {
+        setLoadingVerses(false);
+      }
+    })();
+  }, [selectedBook, selectedChapter]);
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={[styles.content, { paddingBottom: Spacing.xxl + insets.bottom }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ═══ HERO SECTION ═══ */}
-      <View style={styles.hero}>
-        <Image
-          source={require('@/assets/images/hero-bible.png')}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={400}
-        />
-        {/* Deep gradient overlay */}
-        <LinearGradient
-          colors={['#050D1A00', '#050D1AB0', '#050D1AFF']}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Side vignette */}
-        <LinearGradient
-          colors={['#050D1A80', '#050D1A00', '#050D1A80']}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-
-        <View style={[styles.heroContent, { paddingTop: insets.top + Spacing.xl }]}>
-          {/* App badge */}
-          <View style={styles.heroBadge}>
-            <View style={styles.heroBadgeDot} />
-            <Text style={styles.heroBadgeText}>AI-POWERED SCRIPTURE</Text>
-          </View>
-
-          {/* Title */}
-          <Text style={styles.heroTitle}>Bible AI</Text>
-          <Text style={styles.heroSub}>
-            Explore the Word with intelligent search,{'\n'}conversational Q&A, and inspired generation
-          </Text>
-
-          {/* Quick Actions Grid */}
-          <View style={styles.actionsGrid}>
-            {QUICK_ACTIONS.map((a) => (
-              <Pressable
-                key={a.label}
-                style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
-                onPress={() => router.push(a.route as any)}
-              >
-                <LinearGradient
-                  colors={[a.color + '28', a.color + '10']}
-                  style={styles.actionCardGrad}
-                >
-                  <View style={[styles.actionIconWrap, { borderColor: a.color + '50' }]}>
-                    {a.lib === 'material'
-                      ? <MaterialIcons name={a.icon as any} size={20} color={a.color} />
-                      : <Feather name={a.icon as any} size={18} color={a.color} />
-                    }
-                  </View>
-                  <Text style={[styles.actionLabel, { color: a.color }]}>{a.label}</Text>
-                </LinearGradient>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* ═══ VERSE OF THE DAY ═══ */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionIconWrap}>
-              <Feather name="sun" size={14} color={Colors.primary} />
-            </View>
-            <Text style={styles.sectionTitle}>Verse of the Day</Text>
-          </View>
-          <View style={styles.sectionBadge}>
-            <Text style={styles.sectionBadgeText}>KJV</Text>
-          </View>
-        </View>
-        <VerseCard verse={dailyVerse} variant="parchment" />
-      </View>
-
-      {/* ═══ BROWSE BY THEME ═══ */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Browse by Theme</Text>
-          <Pressable
-            onPress={() => router.push('/(tabs)/explore')}
-            style={({ pressed }) => [styles.seeAllBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.seeAll}>See all</Text>
-            <Feather name="chevron-right" size={14} color={Colors.primary} />
-          </Pressable>
-        </View>
-        <View style={styles.themeScrollOuter}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.themeRow}
-          >
-            {FEATURED_THEMES.map((theme) => (
-              <Pressable
-                key={theme}
-                style={({ pressed }) => [styles.themeChip, pressed && { opacity: 0.75 }]}
-                onPress={() => router.push('/(tabs)/explore')}
-              >
-                <Text style={styles.themeChipText}>{theme}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-
-      {/* ═══ FEATURED VERSES ═══ */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionIconWrap}>
-              <Feather name="bookmark" size={14} color={Colors.primary} />
-            </View>
-            <Text style={styles.sectionTitle}>Beloved Verses</Text>
-          </View>
-        </View>
-        {featured.map((verse) => (
-          <VerseCard key={verse.id} verse={verse} variant="compact" />
-        ))}
-      </View>
-
-      {/* ═══ CREATIVE MODE BANNER ═══ */}
-      <Pressable
-        style={({ pressed }) => [styles.creativeBanner, pressed && { opacity: 0.88 }]}
-        onPress={() => router.push('/(tabs)/creative')}
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <LinearGradient
+        colors={[Colors.backgroundDeep, Colors.background]}
+        style={styles.header}
       >
-        <LinearGradient
-          colors={['#1A3A1A', '#0D2A0D', '#050D1A']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.creativeBannerGrad}
-        >
-          {/* Decorative glow */}
-          <View style={styles.creativeGlow} />
-
-          <View style={styles.creativeBannerLeft}>
-            <View style={styles.creativeIconWrap}>
-              <Feather name="edit-3" size={22} color={Colors.success} />
-            </View>
-            <View>
-              <Text style={styles.creativeBannerTitle}>Creative Mode</Text>
-              <Text style={styles.creativeBannerSub}>Generate scripture-inspired prose with AI</Text>
-            </View>
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Bible Library</Text>
+            <Text style={styles.subtitle}>Search and read the 66 books of the Bible</Text>
           </View>
-          <View style={styles.creativeArrow}>
-            <Feather name="arrow-right" size={18} color={Colors.success} />
-          </View>
-        </LinearGradient>
-      </Pressable>
-
-      {/* ═══ BOOKS QUICK VIEW ═══ */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionIconWrap}>
-              <FontAwesome5 name="bible" size={13} color={Colors.primary} />
-            </View>
-            <Text style={styles.sectionTitle}>Books of the Bible</Text>
-          </View>
-          <Pressable
-            onPress={() => router.push('/(tabs)/explore')}
-            style={({ pressed }) => [styles.seeAllBtn, pressed && { opacity: 0.7 }]}
-          >
-            <Text style={styles.seeAll}>All books</Text>
-            <Feather name="chevron-right" size={14} color={Colors.primary} />
-          </Pressable>
         </View>
-        <View style={styles.booksGrid}>
-          {BOOKS.slice(0, 8).map((book) => (
-            <Pressable
-              key={book.name}
-              style={({ pressed }) => [styles.bookChip, pressed && styles.bookChipPressed]}
-              onPress={() => router.push('/(tabs)/explore')}
-            >
-              <Text style={styles.bookChipName}>{book.name}</Text>
-              <Text style={styles.bookChipMeta}>{book.testament}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
 
-      {/* ═══ STATS BAR ═══ */}
-      <View style={styles.statsBar}>
-        {[
-          { label: 'Verses', value: '31,102', icon: 'book-open' as const },
-          { label: 'Books', value: '66', icon: 'layers' as const },
-          { label: 'Themes', value: '15', icon: 'tag' as const },
-          { label: 'AI Models', value: '4', icon: 'cpu' as const },
-        ].map((stat) => (
-          <View key={stat.label} style={styles.statItem}>
-            <Feather name={stat.icon} size={14} color={Colors.primary} />
-            <Text style={styles.statValue}>{stat.value}</Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
+        {/* Book Search Bar - Always visible when browsing books */}
+        {!selectedBook && (
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInner}>
+              <Feather name="search" size={16} color={Colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search books (e.g. Genesis, మత్తయి)..."
+                placeholderTextColor={Colors.textMuted}
+                value={bookSearchQuery}
+                onChangeText={setBookSearchQuery}
+                autoCorrect={false}
+              />
+              {bookSearchQuery.length > 0 && (
+                <Pressable onPress={() => setBookSearchQuery('')}>
+                  <Feather name="x" size={16} color={Colors.textMuted} />
+                </Pressable>
+              )}
+            </View>
           </View>
-        ))}
-      </View>
-    </ScrollView>
+        )}
+      </LinearGradient>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.xxl }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Theme section commented out per user request */}
+        {/* mode === 'themes' logic removed */}
+
+        {/* ── Book List ── */}
+        {loadingBooks ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Loading books from Bible...</Text>
+          </View>
+        ) : (
+          (['Old', 'New'] as const).map((testament) => {
+            const books = allBooks
+              .filter((b) => b.testament === testament)
+              .filter((b) => {
+                if (!bookSearchQuery) return true;
+                const query = bookSearchQuery.toLowerCase();
+                return (
+                  b.name.toLowerCase().includes(query) ||
+                  b.category.toLowerCase().includes(query)
+                );
+              });
+
+            if (books.length === 0) return null;
+            return (
+              <View key={testament} style={styles.section}>
+                {/* Testament divider */}
+                <View style={styles.testamentHeader}>
+                  <View style={[styles.testamentDivider, { backgroundColor: Colors.primary + '30' }]} />
+                  <Text style={styles.sectionLabel}>{testament} Testament</Text>
+                  <View style={[styles.testamentDivider, { backgroundColor: Colors.primary + '30' }]} />
+                </View>
+
+                    <View style={styles.booksList}>
+                      {books.map((book) => {
+                        const isSelected = selectedBook === book.name;
+                        const cfg = CATEGORY_CONFIG[book.category] ?? CATEGORY_CONFIG['Other'];
+                        return (
+                          <View key={book.name}>
+                            {/* ── Book Row ── */}
+                            <Pressable
+                              style={({ pressed }) => [
+                                styles.bookCard,
+                                isSelected && styles.bookCardActive,
+                                pressed && !isSelected && { opacity: 0.85 },
+                              ]}
+                              onPress={() => {
+                                setSelectedBook(isSelected ? null : book.name);
+                              }}
+                            >
+                              <View style={[
+                                styles.bookIcon,
+                                { borderColor: cfg.color + '50', backgroundColor: cfg.color + '15' },
+                                isSelected && { backgroundColor: Colors.primary, borderColor: Colors.primary }
+                              ]}>
+                                <Feather name={cfg.icon} size={16} color={isSelected ? '#000' : cfg.color} />
+                              </View>
+                              <View style={styles.bookInfo}>
+                                <Text style={[styles.bookName, isSelected && styles.bookNameActive]}>
+                                  {book.name}
+                                </Text>
+                                <Text style={[styles.bookMeta, isSelected && styles.bookMetaActive]}>
+                                  {book.category}
+                                </Text>
+                              </View>
+                              <Feather
+                                name={isSelected ? 'chevron-up' : 'chevron-right'}
+                                size={16}
+                                color={isSelected ? Colors.primary : Colors.textMuted}
+                              />
+                            </Pressable>
+
+                            {/* ── Chapter Grid (shown when book selected) ── */}
+                            {isSelected && (
+                              <View style={styles.bookDetails}>
+                                {loadingChapters ? (
+                                  <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="small" color={Colors.primary} />
+                                    <Text style={styles.loadingText}>Loading chapters...</Text>
+                                  </View>
+                                ) : chapters.length > 0 ? (
+                                  <>
+                                    <Text style={styles.chapterLabel}>Select a Chapter</Text>
+                                    <View style={styles.chapterGrid}>
+                                      {chapters.map((ch) => {
+                                        const isChSel = selectedChapter === ch;
+                                        return (
+                                          <Pressable
+                                            key={ch}
+                                            style={[styles.chapterBtn, isChSel && styles.chapterBtnActive]}
+                                            onPress={() => setSelectedChapter(isChSel ? null : ch)}
+                                          >
+                                            <Text style={[styles.chapterBtnText, isChSel && styles.chapterBtnTextActive]}>
+                                              {ch}
+                                            </Text>
+                                          </Pressable>
+                                        );
+                                      })}
+                                    </View>
+
+                                    {/* ── Verses for selected chapter ── */}
+                                    {selectedChapter !== null && (
+                                      <View style={styles.versesSection}>
+                                        {loadingVerses ? (
+                                          <View style={styles.loadingContainer}>
+                                            <ActivityIndicator size="small" color={Colors.primary} />
+                                            <Text style={styles.loadingText}>Loading verses...</Text>
+                                          </View>
+                                        ) : chapterVerses.length > 0 ? (
+                                          <>
+                                            <View style={styles.versesHeader}>
+                                              <Text style={styles.versesHeaderText}>
+                                                Chapter {selectedChapter} · {chapterVerses.length} verses
+                                              </Text>
+                                            </View>
+                                            {chapterVerses.map((v) => (
+                                              <VerseCard key={v.id} verse={v} variant="compact" />
+                                            ))}
+                                          </>
+                                        ) : (
+                                          <Text style={styles.emptyText}>No verses found</Text>
+                                        )}
+                                      </View>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Text style={styles.emptyText}>No chapters found for {book.name}</Text>
+                                )}
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })
+            )}
+      </ScrollView>
+    </View>
   );
 }
 
-const CHIP_W = (SW - Spacing.lg * 2 - Spacing.sm * 3) / 4;
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: { gap: 0 },
+  root: { flex: 1, backgroundColor: Colors.background },
+  scroll: { flex: 1 },
+  content: { paddingVertical: 0 },
 
-  // ── Hero ──
-  hero: {
-    height: 420,
-    overflow: 'hidden',
-  },
-  heroContent: {
-    flex: 1,
+  // ── Header ──
+  header: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-    justifyContent: 'flex-end',
+    paddingVertical: Spacing.lg,
     gap: Spacing.md,
   },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerTop: {
     gap: Spacing.xs,
   },
-  heroBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.primary,
-  },
-  heroBadgeText: {
-    fontSize: FontSize.xs,
-    color: Colors.primary,
+  title: {
+    fontSize: FontSize.xl,
     fontWeight: FontWeight.bold,
-    letterSpacing: 2,
-  },
-  heroTitle: {
-    fontSize: 52,
-    fontWeight: FontWeight.extrabold,
     color: Colors.textWhite,
-    letterSpacing: -1,
-    lineHeight: 54,
   },
-  heroSub: {
+  subtitle: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
-    lineHeight: 22,
   },
 
-  // Actions grid
-  actionsGrid: {
+  // ── Mode Toggle ──
+  modeToggle: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
   },
-  actionCard: {
+  modeBtn: {
     flex: 1,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
   },
-  actionCardGrad: {
-    padding: Spacing.sm,
-    alignItems: 'center',
-    gap: Spacing.xs,
-    minHeight: 72,
-    justifyContent: 'center',
+  modeBtnActive: {
+    borderColor: Colors.primary,
   },
-  actionCardPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.96 }],
-  },
-  actionIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.glass,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontSize: 11,
+  modeBtnText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
     fontWeight: FontWeight.semibold,
-    letterSpacing: 0.3,
+  },
+  modeBtnTextActive: {
+    color: Colors.textWhite,
   },
 
-  // ── Sections ──
+  // ── Section ──
   section: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.md,
+  },
+  sectionLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    alignItems: 'center',
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  sectionIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.glassGold,
-    borderWidth: 1,
-    borderColor: Colors.borderGold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sectionTitle: {
     fontSize: FontSize.lg,
-    fontWeight: FontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  sectionBadge: {
-    backgroundColor: Colors.glassGold,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: Colors.borderGold,
-  },
-  sectionBadgeText: {
-    fontSize: 10,
-    color: Colors.primary,
     fontWeight: FontWeight.bold,
-    letterSpacing: 1,
-  },
-  seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  seeAll: {
-    fontSize: FontSize.sm,
-    color: Colors.primary,
-    fontWeight: FontWeight.medium,
+    color: Colors.textWhite,
   },
 
-  // Themes
-  themeScrollOuter: {
-    minHeight: 44,
-  },
-  themeRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingBottom: Spacing.xs,
-  },
-  themeChip: {
-    backgroundColor: Colors.glassMid,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderWidth: 1,
-    borderColor: Colors.borderGold,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  themeChipText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
-    color: Colors.textGold,
-  },
-
-  // Creative Banner
-  creativeBanner: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.xl,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.success + '30',
-    ...Shadow.md,
-  },
-  creativeBannerGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.lg,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  creativeGlow: {
-    position: 'absolute',
-    left: -30,
-    top: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.success + '15',
-  },
-  creativeBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  creativeIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.success + '18',
-    borderWidth: 1,
-    borderColor: Colors.success + '40',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  creativeBannerTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  creativeBannerSub: {
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginTop: 2,
-    maxWidth: 180,
-  },
-  creativeArrow: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.success + '18',
-    borderWidth: 1,
-    borderColor: Colors.success + '40',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Books grid
-  booksGrid: {
+  // ── Theme Grid ──
+  themeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
+    marginTop: Spacing.sm,
   },
-  bookChip: {
-    backgroundColor: Colors.glass,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    width: CHIP_W,
-    minHeight: 52,
-    justifyContent: 'center',
-  },
-  bookChipPressed: {
-    backgroundColor: Colors.glassGold,
-    borderColor: Colors.borderGold,
-  },
-  bookChipName: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    color: Colors.textPrimary,
-  },
-  bookChipMeta: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginTop: 2,
+  themeColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 
-  // Stats bar
-  statsBar: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.xl,
-    backgroundColor: Colors.glass,
+  // ── Collections Grid ──
+  collectionsGrid: {
+    gap: Spacing.md,
+  },
+  collectionCard: {
     borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
     overflow: 'hidden',
   },
-  statItem: {
-    flex: 1,
+  collectionGrad: {
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    gap: 4,
-    borderRightWidth: 1,
-    borderRightColor: Colors.border,
+    borderWidth: 1,
+    borderColor: '#ffffff05',
   },
-  statValue: {
+  collectionDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  collectionTitle: {
     fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
+    flex: 1,
   },
-  statLabel: {
-    fontSize: 10,
+  collectionCount: {
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
-    fontWeight: FontWeight.medium,
+  },
+  collectionArrow: {
+    marginLeft: Spacing.sm,
+  },
+
+  // ── Testament Header ──
+  testamentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginVertical: Spacing.md,
+  },
+  testamentDivider: {
+    flex: 1,
+    height: 1,
+  },
+
+  // ── Books ──
+  bookCategory: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.semibold,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  booksList: {
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  bookCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.glass + '10',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  bookCardActive: {
+    backgroundColor: Colors.primary + '20',
+    borderColor: Colors.primary + '30',
+  },
+  bookCardActiveBlue: {
+    backgroundColor: Colors.info + '20',
+    borderColor: Colors.info + '50',
+  },
+  bookIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookInfo: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  bookName: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textWhite,
+  },
+  bookNameActive: {
+    color: Colors.primary,
+  },
+  bookMeta: {
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+  },
+  bookMetaActive: {
+    color: Colors.textSecondary,
+  },
+  bookDetails: {
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+  bookStats: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary + '15',
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  bookStatsText: {
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    fontWeight: FontWeight.semibold,
+  },
+  moreVersesText: {
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+
+  // ── Badges & Status ──
+  countBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.primary + '20',
+  },
+  countBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.primary,
+  },
+
+  // ── Loading & Empty ──
+  loadingContainer: {
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  loadingText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
+  emptyText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    paddingVertical: Spacing.lg,
+  },
+  infoText: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    paddingVertical: Spacing.md,
+  },
+
+  // ── Chapter navigation ──
+  chapterLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+  },
+  chapterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+  },
+  chapterBtn: {
+    minWidth: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.sm,
+  },
+  chapterBtnActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chapterBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  chapterBtnTextActive: {
+    color: Colors.backgroundDeep,
+    fontWeight: FontWeight.bold,
+  },
+
+  // ── Verses panel ──
+  versesSection: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  versesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary + '15',
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  versesHeaderText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.primary,
+  },
+
+  // ── Search UI ──
+  searchContainer: {
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    marginTop: -8,
+  },
+  searchInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.glassMid,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    height: 44,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    gap: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    color: Colors.textWhite,
+    fontSize: FontSize.sm,
+    height: '100%',
   },
 });

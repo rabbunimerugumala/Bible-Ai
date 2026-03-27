@@ -7,4 +7,7 @@ config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
 };
 
+// Add sqlite support
+config.resolver.assetExts.push('db', 'sqlite');
+
 module.exports = config;

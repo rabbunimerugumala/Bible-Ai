@@ -1,4 +1,4 @@
-// Powered by OnSpace.AI
+// Powered by OnSpace.AI — Async SQLite Search Hook
 import { useState, useCallback } from 'react';
 import { Verse } from '@/constants/bibleData';
 import { searchVerses } from '@/services/bibleService';
@@ -27,8 +27,12 @@ export function useSearch() {
           const res = await semanticSearch(q);
           setResults(res);
         } else {
-          setResults(searchVerses(q));
+          const res = await searchVerses(q);
+          setResults(res);
         }
+      } catch (error) {
+        console.error('Search error:', error);
+        setResults([]);
       } finally {
         setLoading(false);
       }

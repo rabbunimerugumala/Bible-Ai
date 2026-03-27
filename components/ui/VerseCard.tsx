@@ -40,7 +40,10 @@ export function VerseCard({ verse, variant = 'default', onPress }: VerseCardProp
 
           <View style={styles.parchmentContent}>
             <Text style={styles.parchmentQuote}>"</Text>
-            <Text style={styles.parchmentText}>{verse.text}</Text>
+            <Text style={styles.parchmentText}>
+              <Text style={{ fontWeight: 'bold' }}>{verse.verse}. </Text>
+              {verse.text}
+            </Text>
             <View style={styles.parchmentFooter}>
               <Text style={styles.parchmentRef}>{formatReference(verse)}</Text>
               <View style={styles.parchmentThemes}>
@@ -70,7 +73,10 @@ export function VerseCard({ verse, variant = 'default', onPress }: VerseCardProp
       >
         <View style={styles.compactAccent} />
         <View style={styles.compactContent}>
-          <Text style={styles.compactText} numberOfLines={2}>{verse.text}</Text>
+          <Text style={styles.compactText} numberOfLines={2}>
+            <Text style={{ fontWeight: 'bold', color: Colors.primary }}>{verse.verse}. </Text>
+            {verse.text}
+          </Text>
           <Text style={styles.compactRef}>{formatReference(verse)}</Text>
         </View>
         <Feather name="chevron-right" size={14} color={Colors.textMuted} style={styles.compactArrow} />
@@ -103,7 +109,10 @@ export function VerseCard({ verse, variant = 'default', onPress }: VerseCardProp
       <View style={styles.glassContent}>
         {/* Quote mark */}
         <Text style={styles.quoteChar}>"</Text>
-        <Text style={styles.glassVerseText}>{verse.text}</Text>
+        <Text style={styles.glassVerseText}>
+          <Text style={{ fontWeight: 'bold', color: Colors.primary }}>{verse.verse}. </Text>
+          {verse.text}
+        </Text>
 
         <View style={styles.glassFooter}>
           <View style={styles.glassRefBadge}>

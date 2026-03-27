@@ -71,7 +71,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Bible',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
               <FontAwesome5 name="bible" size={size - 3} color={color} />
@@ -115,7 +115,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
+          title: 'Home',
           tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.tabIconWrap, focused && styles.tabIconWrapActive]}>
               <Feather name="compass" size={size - 1} color={color} />

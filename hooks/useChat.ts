@@ -1,5 +1,5 @@
-// Powered by OnSpace.AI
-import { useState, useCallback } from 'react';
+// Powered by OnSpace.AI — Async Chat Hook with SQLite
+import { useState, useCallback, useEffect } from 'react';
 import { ChatMessage, askQuestion } from '@/services/aiService';
 
 const WELCOME: ChatMessage = {
@@ -31,6 +31,15 @@ export function useChat() {
     try {
       const response = await askQuestion(text);
       setMessages((prev) => [...prev, response]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMsg: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        text: 'I encountered an issue retrieving scripture. Please try again.',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setLoading(false);
     }
